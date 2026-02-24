@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QScrollBar>
+#include <QRegularExpression>
 
 #include <cmark-gfm.h>
 #include <cmark-gfm-core-extensions.h>
@@ -79,6 +80,7 @@ void MarkdownViewer::loadFile()
     file.close();
 
     QString html = renderMarkdown(raw);
+    html = transformAlerts(html);
     m_browser->setHtml(wrapHtml(html));
 }
 
@@ -116,88 +118,222 @@ QString MarkdownViewer::renderMarkdown(const QByteArray &markdown)
     return result;
 }
 
+QString MarkdownViewer::transformAlerts(const QString &html)
+{
+    // GitHub alert/admonition syntax: > [!TYPE]\n> content
+    // cmark-gfm renders these as normal blockquotes with a <p> starting
+    // with "[!TYPE]". We detect that pattern and replace the blockquote
+    // with a styled div.
+    //
+    // cmark-gfm output looks like:
+    //   <blockquote>\n<p>[!TIP]\nSome text...</p>\n</blockquote>
+
+    struct AlertType {
+        const char *tag;
+        const char *label;
+        const char *borderColor;
+        const char *titleColor;
+        const char *icon;  // Unicode icon similar to GitHub's octicons
+    };
+
+    static const AlertType alerts[] = {
+        {"NOTE",      "Note",      "#0969da", "#0969da", "\xe2\x84\xb9\xef\xb8\x8f"},   // info
+        {"TIP",       "Tip",       "#1a7f37", "#1a7f37", "\xf0\x9f\x92\xa1"},             // bulb
+        {"IMPORTANT", "Important", "#8250df", "#8250df", "\xe2\x9d\x97"},                 // exclamation
+        {"WARNING",   "Warning",   "#9a6700", "#9a6700", "\xe2\x9a\xa0\xef\xb8\x8f"},    // warning
+        {"CAUTION",   "Caution",   "#cf222e", "#d1242f", "\xf0\x9f\x94\xb4"},             // red circle
+    };
+
+    QString result = html;
+
+    for (const auto &alert : alerts) {
+        // Match: <blockquote>\n<p>[!TYPE]\n or <blockquote>\n<p>[!TYPE]<br> or similar
+        // The pattern needs to be flexible since cmark-gfm may use \n or <br /> between
+        // the [!TYPE] marker and the content.
+        QString pattern = QStringLiteral(
+            "<blockquote>\\s*<p>\\[!%1\\]\\s*(?:<br\\s*/?>)?\\s*"
+        ).arg(QString::fromUtf8(alert.tag));
+
+        QRegularExpression re(pattern, QRegularExpression::CaseInsensitiveOption);
+        QRegularExpressionMatch match = re.match(result);
+
+        while (match.hasMatch()) {
+            // Find the closing </blockquote> for this match
+            int startPos = match.capturedStart();
+            int contentStart = match.capturedEnd();
+
+            // Find the matching </blockquote>
+            int closeTag = result.indexOf(QStringLiteral("</blockquote>"), contentStart);
+            if (closeTag < 0) break;
+
+            // Extract the inner content (everything between our match end and </blockquote>)
+            // We need to also strip the closing </p> that wraps the first paragraph
+            QString inner = result.mid(contentStart, closeTag - contentStart);
+
+            // Build the alert box HTML using inline styles (since QTextBrowser
+            // has limited class/selector support, inline is most reliable)
+            QString replacement = QStringLiteral(
+                "<div style='border-left: 4px solid %1; padding: 8px 16px; "
+                "margin: 0 0 16px 0; color: #1f2328;'>"
+                "<p style='font-weight: 600; color: %2; margin-bottom: 8px;'>"
+                "%3 %4</p>"
+                "%5"
+                "</div>"
+            ).arg(
+                QString::fromUtf8(alert.borderColor),
+                QString::fromUtf8(alert.titleColor),
+                QString::fromUtf8(alert.icon),
+                QString::fromUtf8(alert.label),
+                inner
+            );
+
+            result.replace(startPos, closeTag + 13 /* len("</blockquote>") */ - startPos, replacement);
+
+            // Search again in case there are more of the same type
+            match = re.match(result, startPos + replacement.size());
+        }
+    }
+
+    return result;
+}
+
 QString MarkdownViewer::wrapHtml(const QString &body)
 {
-    // Minimal stylesheet that works within QTextBrowser's CSS subset.
-    // QTextBrowser supports basic CSS: font, color, margin, padding,
-    // border, background, text-align — but no flexbox, grid, etc.
+    // GitHub-style stylesheet using only QTextBrowser-compatible CSS.
+    // Color values are resolved from github-markdown-css (alpha hex
+    // blended against #ffffff where needed).
     static const QString tmpl = QStringLiteral(R"(
 <!DOCTYPE html>
 <html>
 <head>
 <style>
 body {
-    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
     color: #1f2328;
-    margin: 20px;
+    background-color: #ffffff;
+    font-family: "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    margin: 32px;
 }
+
+/* Headings */
 h1, h2, h3, h4, h5, h6 {
     margin-top: 24px;
     margin-bottom: 16px;
     font-weight: 600;
     line-height: 1.25;
 }
-h1 { font-size: 2em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
-h2 { font-size: 1.5em; border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3em; }
-h3 { font-size: 1.25em; }
-code {
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    font-size: 85%;
-    background-color: #eff1f3;
-    padding: 0.2em 0.4em;
-    border-radius: 3px;
+h1 {
+    font-size: 32px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #d8dfe5;
 }
+h2 {
+    font-size: 24px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid #d8dfe5;
+}
+h3 { font-size: 20px; }
+h4 { font-size: 16px; }
+h5 { font-size: 14px; }
+h6 { font-size: 14px; color: #59636e; }
+
+/* Paragraphs */
+p {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+/* Links */
+a {
+    color: #0969da;
+    text-decoration: underline;
+}
+
+/* Bold */
+b, strong { font-weight: 600; }
+
+/* Inline code */
+code {
+    font-family: Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px;
+    padding: 3px 6px;
+    margin: 0;
+    background-color: #edeef0;
+}
+
+/* Code blocks */
 pre {
-    background-color: #f6f8fa;
-    border: 1px solid #d1d9e0;
-    border-radius: 6px;
-    padding: 16px;
-    overflow: auto;
-    font-size: 85%;
+    font-family: Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px;
     line-height: 1.45;
+    color: #1f2328;
+    background-color: #f6f8fa;
+    padding: 16px;
+    margin-top: 0;
+    margin-bottom: 16px;
+    border: 1px solid #d1d9e0;
 }
 pre code {
-    background: transparent;
     padding: 0;
-}
-blockquote {
     margin: 0;
+    background-color: transparent;
+    border: 0;
+    font-size: 13px;
+}
+
+/* Blockquote */
+blockquote {
+    margin: 0 0 16px 0;
     padding: 0 16px;
-    color: #656d76;
+    color: #59636e;
     border-left: 4px solid #d1d9e0;
 }
+
+/* Tables */
 table {
     border-collapse: collapse;
-    margin: 16px 0;
+    margin-top: 0;
+    margin-bottom: 16px;
 }
 th, td {
-    border: 1px solid #d1d9e0;
     padding: 6px 13px;
+    border: 1px solid #d1d9e0;
 }
 th {
     font-weight: 600;
     background-color: #f6f8fa;
 }
-a {
-    color: #0969da;
-    text-decoration: none;
+tr {
+    background-color: #ffffff;
 }
-hr {
-    border: none;
-    border-top: 1px solid #d1d9e0;
-    margin: 24px 0;
-}
-img {
-    max-width: 100%;
-}
+
+/* Lists */
 ul, ol {
-    padding-left: 2em;
+    margin-top: 0;
+    margin-bottom: 16px;
+    padding-left: 32px;
 }
 li {
-    margin: 0.25em 0;
+    margin-top: 4px;
 }
+
+/* Horizontal rule — GitHub renders this as a solid 4px bar */
+hr {
+    height: 4px;
+    padding: 0;
+    margin: 24px 0;
+    background-color: #d1d9e0;
+    border: 0;
+}
+
+/* Images */
+img {
+    border: 0;
+}
+
+/* Strikethrough */
 del {
     text-decoration: line-through;
 }

@@ -20,6 +20,7 @@ private slots:
 private:
     void loadFile();
     QString renderMarkdown(const QByteArray &markdown);
+    QString transformAlerts(const QString &html);
     QString wrapHtml(const QString &body);
 
     QString m_filePath;
