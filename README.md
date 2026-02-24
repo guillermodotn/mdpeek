@@ -45,16 +45,17 @@ git submodule update --init --recursive
 
 ## Build
 
-### Container build (recommended)
-
-Compiles everything inside a Fedora 43 container — no host dependencies
-needed beyond Podman and Qt6 runtime libraries.
-
-```bash
-./build.sh
-```
-
-The binary is extracted to `./build/mdpeek`.
+> [!TIP]
+> ### Container build (recommended)
+>
+> Compiles everything inside a Fedora 43 container — no host dependencies
+> needed beyond Podman and Qt6 runtime libraries.
+>
+> ```bash
+> ./build.sh
+> ```
+>
+> The binary is extracted to `./build/mdpeek`.
 
 ### Local build
 
