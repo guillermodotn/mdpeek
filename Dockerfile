@@ -6,6 +6,7 @@ RUN dnf install -y \
     gcc-c++ \
     make \
     qt6-qtbase-devel \
+    qt6-qtwebengine-devel \
     && dnf clean all
 
 WORKDIR /src
@@ -18,7 +19,7 @@ RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
 # Copy it out via a multi-stage build or volume mount.
 FROM fedora:43
 
-RUN dnf install -y qt6-qtbase-gui && dnf clean all
+RUN dnf install -y qt6-qtbase-gui qt6-qtwebengine && dnf clean all
 
 COPY --from=builder /src/build/mdpeek /usr/local/bin/mdpeek
 

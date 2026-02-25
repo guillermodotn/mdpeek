@@ -1,6 +1,8 @@
 # mdpeek
 
-Vibe coded lightweight CLI markdown previewer with live reload.
+![cmark-gfm](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/cmark-gfm/status_image/last_build.png)
+
+CLI markdown previewer with GitHub-style rendering and live reload.
 
 Renders GitHub Flavored Markdown in a native Qt window and automatically
 refreshes when the file changes on disk.
@@ -10,7 +12,7 @@ refreshes when the file changes on disk.
 - **GFM support** — tables, strikethrough, autolinks, task lists, tag filter
   (via cmark-gfm)
 - **Live reload** — watches the file for changes and re-renders automatically
-- **Lightweight** — uses QTextBrowser (no embedded Chromium), ~345KB binary
+- **GitHub-style rendering** — pixel-perfect GitHub CSS via QWebEngineView
 - **Scroll preservation** — maintains scroll position across reloads
 - **Atomic save handling** — correctly handles editors that save via
   write-tmp + rename
@@ -25,10 +27,10 @@ refreshes when the file changes on disk.
 
 - CMake >= 3.16
 - GCC/G++ with C++17 support
-- Qt6 Widgets development headers
-  - Fedora: `sudo dnf install qt6-qtbase-devel`
-  - Ubuntu/Debian: `sudo apt install qt6-base-dev`
-  - Arch: `sudo pacman -S qt6-base`
+- Qt6 Widgets + WebEngine development headers
+  - Fedora: `sudo dnf install qt6-qtbase-devel qt6-qtwebengine-devel`
+  - Ubuntu/Debian: `sudo apt install qt6-base-dev qt6-webengine-dev`
+  - Arch: `sudo pacman -S qt6-base qt6-webengine`
 
 ## Clone
 
@@ -77,6 +79,6 @@ the preview updates automatically.
 
 - **cmark-gfm** (vendored as a Git submodule, statically linked) parses
   Markdown to HTML with GitHub Flavored Markdown extensions
-- **QTextBrowser** renders the HTML in a native Qt widget
+- **QWebEngineView** renders the HTML with full GitHub CSS styling
 - **QFileSystemWatcher** monitors the file for changes (uses inotify on
   Linux) with a 150ms debounce timer to handle rapid saves

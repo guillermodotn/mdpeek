@@ -3,9 +3,9 @@
 
 #include <QMainWindow>
 #include <QFileSystemWatcher>
-#include <QTextBrowser>
 #include <QTimer>
 #include <QString>
+#include <QWebEngineView>
 
 class MarkdownViewer : public QMainWindow {
     Q_OBJECT
@@ -24,7 +24,7 @@ private:
     QString wrapHtml(const QString &body);
 
     QString m_filePath;
-    QTextBrowser *m_browser;
+    QWebEngineView *m_view;
     QFileSystemWatcher *m_watcher;
     QTimer *m_debounceTimer;
 };
