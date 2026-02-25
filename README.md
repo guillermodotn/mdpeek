@@ -1,6 +1,7 @@
 # mdpeek
 
-![cmark-gfm](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/cmark-gfm/status_image/last_build.png)
+[![Copr build status](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek/)
+
 
 Lightweight CLI markdown previewer with GitHub-style rendering and live reload.
 
