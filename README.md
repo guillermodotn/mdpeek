@@ -2,9 +2,9 @@
 
 ![cmark-gfm](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/cmark-gfm/status_image/last_build.png)
 
-CLI markdown previewer with GitHub-style rendering and live reload.
+Lightweight CLI markdown previewer with GitHub-style rendering and live reload.
 
-Renders GitHub Flavored Markdown in a native Qt window and automatically
+Renders GitHub Flavored Markdown in a native GTK4 window and automatically
 refreshes when the file changes on disk.
 
 ## Features
@@ -12,7 +12,8 @@ refreshes when the file changes on disk.
 - **GFM support** — tables, strikethrough, autolinks, task lists, tag filter
   (via cmark-gfm)
 - **Live reload** — watches the file for changes and re-renders automatically
-- **GitHub-style rendering** — pixel-perfect GitHub CSS via QWebEngineView
+- **GitHub-style rendering** — pixel-perfect GitHub CSS via WebKitGTK
+- **Lightweight** — WebKitGTK (~30MB) instead of Chromium (~261MB)
 - **Scroll preservation** — maintains scroll position across reloads
 - **Atomic save handling** — correctly handles editors that save via
   write-tmp + rename
@@ -26,11 +27,11 @@ refreshes when the file changes on disk.
 **Local build:**
 
 - CMake >= 3.16
-- GCC/G++ with C++17 support
-- Qt6 Widgets + WebEngine development headers
-  - Fedora: `sudo dnf install qt6-qtbase-devel qt6-qtwebengine-devel`
-  - Ubuntu/Debian: `sudo apt install qt6-base-dev qt6-webengine-dev`
-  - Arch: `sudo pacman -S qt6-base qt6-webengine`
+- GCC with C99 support
+- GTK4 + WebKitGTK development headers
+  - Fedora: `sudo dnf install gtk4-devel webkitgtk6.0-devel`
+  - Ubuntu/Debian: `sudo apt install libgtk-4-dev libwebkitgtk-6.0-dev`
+  - Arch: `sudo pacman -S gtk4 webkitgtk-6.0`
 
 ## Clone
 
@@ -51,7 +52,7 @@ git submodule update --init --recursive
 > ### Container build (recommended)
 >
 > Compiles everything inside a Fedora 43 container — no host dependencies
-> needed beyond Podman and Qt6 runtime libraries.
+> needed beyond Podman and GTK4/WebKitGTK runtime libraries.
 >
 > ```bash
 > ./build.sh
@@ -79,6 +80,6 @@ the preview updates automatically.
 
 - **cmark-gfm** (vendored as a Git submodule, statically linked) parses
   Markdown to HTML with GitHub Flavored Markdown extensions
-- **QWebEngineView** renders the HTML with full GitHub CSS styling
-- **QFileSystemWatcher** monitors the file for changes (uses inotify on
-  Linux) with a 150ms debounce timer to handle rapid saves
+- **WebKitGTK** renders the HTML with full GitHub CSS styling in a GTK4 window
+- **GFileMonitor** monitors the file for changes (uses inotify on
+  Linux) with a 150ms debounce to handle rapid saves
