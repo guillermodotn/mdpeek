@@ -17,6 +17,10 @@ static void  on_file_changed(GFileMonitor *monitor, GFile *file,
                               gpointer user_data);
 static void  on_close_action(GSimpleAction *action, GVariant *param,
                               gpointer user_data);
+static gboolean on_decide_policy(WebKitWebView *web_view,
+                                  WebKitPolicyDecision *decision,
+                                  WebKitPolicyDecisionType type,
+                                  gpointer user_data);
 
 /* ── HTML template ──────────────────────────────────────────────────── */
 
@@ -386,6 +390,36 @@ static void on_close_action(GSimpleAction *action, GVariant *param,
     gtk_window_close(GTK_WINDOW(v->window));
 }
 
+static gboolean on_decide_policy(WebKitWebView *web_view,
+                                  WebKitPolicyDecision *decision,
+                                  WebKitPolicyDecisionType type,
+                                  gpointer user_data)
+{
+    (void)web_view; (void)user_data;
+
+    if (type != WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION)
+        return FALSE;
+
+    WebKitNavigationPolicyDecision *nav =
+        WEBKIT_NAVIGATION_POLICY_DECISION(decision);
+    WebKitNavigationAction *action =
+        webkit_navigation_policy_decision_get_navigation_action(nav);
+    WebKitURIRequest *request =
+        webkit_navigation_action_get_request(action);
+    const char *uri = webkit_uri_request_get_uri(request);
+
+    /* Allow initial load and local content (about:blank, data:, etc.) */
+    if (uri == NULL ||
+        g_str_has_prefix(uri, "about:") ||
+        g_str_has_prefix(uri, "data:"))
+        return FALSE;
+
+    /* Open in default browser and block in-app navigation */
+    webkit_policy_decision_ignore(decision);
+    g_app_info_launch_default_for_uri(uri, NULL, NULL);
+    return TRUE;
+}
+
 MdpeekViewer *viewer_new(AdwApplication *app, const char *file_path)
 {
     MdpeekViewer *v = g_new0(MdpeekViewer, 1);
@@ -404,6 +438,8 @@ MdpeekViewer *viewer_new(AdwApplication *app, const char *file_path)
 
     /* WebView */
     v->webview = WEBKIT_WEB_VIEW(webkit_web_view_new());
+    g_signal_connect(v->webview, "decide-policy",
+                     G_CALLBACK(on_decide_policy), NULL);
     adw_application_window_set_content(v->window, GTK_WIDGET(v->webview));
 
     /* Escape to close */
