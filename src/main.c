@@ -45,6 +45,9 @@ int main(int argc, char *argv[])
 
     g_file_path = abs_path;
 
+    /* Silence noisy GTK/WebKit/Mesa warnings on stderr */
+    freopen("/dev/null", "w", stderr);
+
     AdwApplication *app = adw_application_new("com.github.gleiro.mdpeek",
                                                G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);

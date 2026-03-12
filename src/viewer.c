@@ -476,7 +476,7 @@ MdpeekViewer *viewer_new(AdwApplication *app, const char *file_path)
     /* Initial load */
     viewer_load_file(v);
 
-    fprintf(stderr, "Press Escape to quit.\n");
+    printf("Press Escape to quit.\n");
 
     gtk_window_present(GTK_WINDOW(v->window));
     return v;
