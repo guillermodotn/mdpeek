@@ -15,6 +15,8 @@ static char *wrap_html(const char *body);
 static void  on_file_changed(GFileMonitor *monitor, GFile *file,
                               GFile *other, GFileMonitorEvent event,
                               gpointer user_data);
+static void  on_close_action(GSimpleAction *action, GVariant *param,
+                              gpointer user_data);
 
 /* ── HTML template ──────────────────────────────────────────────────── */
 
@@ -376,7 +378,15 @@ static void on_window_destroy(GtkWidget *widget, gpointer user_data)
     viewer_free((MdpeekViewer *)user_data);
 }
 
-MdpeekViewer *viewer_new(GtkApplication *app, const char *file_path)
+static void on_close_action(GSimpleAction *action, GVariant *param,
+                             gpointer user_data)
+{
+    (void)action; (void)param;
+    MdpeekViewer *v = (MdpeekViewer *)user_data;
+    gtk_window_close(GTK_WINDOW(v->window));
+}
+
+MdpeekViewer *viewer_new(AdwApplication *app, const char *file_path)
 {
     MdpeekViewer *v = g_new0(MdpeekViewer, 1);
     v->file_path = g_strdup(file_path);
@@ -386,14 +396,27 @@ MdpeekViewer *viewer_new(GtkApplication *app, const char *file_path)
     char *title = g_strdup_printf("%s \xe2\x80\x94 mdpeek", basename);
     g_free(basename);
 
-    v->window = GTK_WINDOW(gtk_application_window_new(app));
-    gtk_window_set_title(v->window, title);
-    gtk_window_set_default_size(v->window, 900, 700);
+    v->window = ADW_APPLICATION_WINDOW(
+        adw_application_window_new(GTK_APPLICATION(app)));
+    gtk_window_set_title(GTK_WINDOW(v->window), title);
+    gtk_window_set_default_size(GTK_WINDOW(v->window), 900, 700);
     g_free(title);
 
     /* WebView */
     v->webview = WEBKIT_WEB_VIEW(webkit_web_view_new());
-    gtk_window_set_child(v->window, GTK_WIDGET(v->webview));
+    adw_application_window_set_content(v->window, GTK_WIDGET(v->webview));
+
+    /* Escape to close */
+    GSimpleAction *close_action = g_simple_action_new("close", NULL);
+    g_signal_connect(close_action, "activate",
+                     G_CALLBACK(on_close_action), v);
+    g_action_map_add_action(G_ACTION_MAP(v->window),
+                            G_ACTION(close_action));
+    g_object_unref(close_action);
+
+    const char * const close_accels[] = {"Escape", NULL};
+    gtk_application_set_accels_for_action(GTK_APPLICATION(app),
+                                          "win.close", close_accels);
 
     /* File monitor */
     GFile *gfile = g_file_new_for_path(file_path);
@@ -417,7 +440,9 @@ MdpeekViewer *viewer_new(GtkApplication *app, const char *file_path)
     /* Initial load */
     viewer_load_file(v);
 
-    gtk_window_present(v->window);
+    fprintf(stderr, "Press Escape to quit.\n");
+
+    gtk_window_present(GTK_WINDOW(v->window));
     return v;
 }
 

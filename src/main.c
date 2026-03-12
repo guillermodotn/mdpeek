@@ -11,7 +11,7 @@ static void usage(const char *prog)
     fprintf(stderr, "\nPreview a Markdown file with live reload.\n");
 }
 
-static void activate(GtkApplication *app, gpointer user_data)
+static void activate(AdwApplication *app, gpointer user_data)
 {
     (void)user_data;
     viewer_new(app, g_file_path);
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 
     g_file_path = abs_path;
 
-    GtkApplication *app = gtk_application_new("com.github.gleiro.mdpeek",
+    AdwApplication *app = adw_application_new("com.github.gleiro.mdpeek",
                                                G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
 

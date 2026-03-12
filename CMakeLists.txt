@@ -9,6 +9,7 @@ include(GNUInstallDirs)
 # --- GTK4 + WebKitGTK (system dependencies) ---
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK4 REQUIRED gtk4)
+pkg_check_modules(ADW REQUIRED libadwaita-1)
 pkg_check_modules(WEBKIT REQUIRED webkitgtk-6.0)
 
 # --- cmark-gfm ---
@@ -34,6 +35,7 @@ add_executable(mdpeek
 
 target_include_directories(mdpeek PRIVATE
     ${GTK4_INCLUDE_DIRS}
+    ${ADW_INCLUDE_DIRS}
     ${WEBKIT_INCLUDE_DIRS}
 )
 
@@ -41,12 +43,14 @@ if(CMARK_GFM_FOUND)
     target_include_directories(mdpeek PRIVATE ${CMARK_GFM_INCLUDE_DIRS})
     target_link_libraries(mdpeek PRIVATE
         ${GTK4_LINK_LIBRARIES}
+        ${ADW_LINK_LIBRARIES}
         ${WEBKIT_LINK_LIBRARIES}
         ${CMARK_GFM_LINK_LIBRARIES}
         cmark-gfm-extensions
     )
     target_compile_options(mdpeek PRIVATE
         ${GTK4_CFLAGS_OTHER}
+        ${ADW_CFLAGS_OTHER}
         ${WEBKIT_CFLAGS_OTHER}
     )
 else()
@@ -57,12 +61,14 @@ else()
     )
     target_link_libraries(mdpeek PRIVATE
         ${GTK4_LINK_LIBRARIES}
+        ${ADW_LINK_LIBRARIES}
         ${WEBKIT_LINK_LIBRARIES}
         libcmark-gfm-extensions_static
         libcmark-gfm_static
     )
     target_compile_options(mdpeek PRIVATE
         ${GTK4_CFLAGS_OTHER}
+        ${ADW_CFLAGS_OTHER}
         ${WEBKIT_CFLAGS_OTHER}
     )
 endif()
