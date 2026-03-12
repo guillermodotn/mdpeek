@@ -331,6 +331,17 @@ static const char *HTML_TEMPLATE =
 "%s\n"
 "</article>\n"
 "</div>\n"
+"<script src=\"https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js\"></script>\n"
+"<script>\n"
+"document.querySelectorAll('code.language-mermaid').forEach(function(code) {\n"
+"  var pre = code.parentElement;\n"
+"  var div = document.createElement('div');\n"
+"  div.className = 'mermaid';\n"
+"  div.textContent = code.textContent;\n"
+"  pre.parentElement.replaceChild(div, pre);\n"
+"});\n"
+"mermaid.initialize({ startOnLoad: true });\n"
+"</script>\n"
 "</body>\n"
 "</html>\n";
 
@@ -438,6 +449,7 @@ MdpeekViewer *viewer_new(AdwApplication *app, const char *file_path)
 
     /* WebView */
     v->webview = WEBKIT_WEB_VIEW(webkit_web_view_new());
+
     g_signal_connect(v->webview, "decide-policy",
                      G_CALLBACK(on_decide_policy), NULL);
     adw_application_window_set_content(v->window, GTK_WIDGET(v->webview));
