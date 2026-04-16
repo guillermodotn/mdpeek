@@ -419,10 +419,11 @@ static gboolean on_decide_policy(WebKitWebView *web_view,
         webkit_navigation_action_get_request(action);
     const char *uri = webkit_uri_request_get_uri(request);
 
-    /* Allow initial load and local content (about:blank, data:, etc.) */
+    /* Allow initial load and local content */
     if (uri == NULL ||
         g_str_has_prefix(uri, "about:") ||
-        g_str_has_prefix(uri, "data:"))
+        g_str_has_prefix(uri, "data:") ||
+        g_str_has_prefix(uri, "file:"))
         return FALSE;
 
     /* Open in default browser and block in-app navigation */
@@ -447,8 +448,12 @@ MdpeekViewer *viewer_new(AdwApplication *app, const char *file_path)
     gtk_window_set_default_size(GTK_WINDOW(v->window), 900, 700);
     g_free(title);
 
-    /* WebView */
-    v->webview = WEBKIT_WEB_VIEW(webkit_web_view_new());
+    /* WebView — allow file:// access for local images */
+    WebKitSettings *wk_settings = webkit_settings_new();
+    webkit_settings_set_allow_file_access_from_file_urls(wk_settings, TRUE);
+    v->webview = WEBKIT_WEB_VIEW(
+        g_object_new(WEBKIT_TYPE_WEB_VIEW, "settings", wk_settings, NULL));
+    g_object_unref(wk_settings);
 
     g_signal_connect(v->webview, "decide-policy",
                      G_CALLBACK(on_decide_policy), NULL);
@@ -555,7 +560,18 @@ void viewer_load_file(MdpeekViewer *v)
     char *full_html = wrap_html(transformed);
     g_free(transformed);
 
-    webkit_web_view_load_html(v->webview, full_html, NULL);
+    char *dir = g_path_get_dirname(v->file_path);
+    char *dir_uri = g_filename_to_uri(dir, NULL, NULL);
+    g_free(dir);
+    char *base_uri = g_strdup_printf("%s/", dir_uri);
+    g_free(dir_uri);
+
+    char *content_uri = g_filename_to_uri(v->file_path, NULL, NULL);
+
+    webkit_web_view_load_alternate_html(v->webview, full_html,
+                                        content_uri, base_uri);
+    g_free(content_uri);
+    g_free(base_uri);
     g_free(full_html);
 }
 
