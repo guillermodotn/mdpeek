@@ -21,6 +21,7 @@ static gboolean on_decide_policy(WebKitWebView *web_view,
                                   WebKitPolicyDecision *decision,
                                   WebKitPolicyDecisionType type,
                                   gpointer user_data);
+static void  scroll_save_and_reload(MdpeekViewer *v);
 
 /* ── HTML template ──────────────────────────────────────────────────── */
 
@@ -401,12 +402,39 @@ static void on_close_action(GSimpleAction *action, GVariant *param,
     gtk_window_close(GTK_WINDOW(v->window));
 }
 
+static void on_scroll_saved(GObject *source, GAsyncResult *result,
+                             gpointer user_data)
+{
+    MdpeekViewer *v = (MdpeekViewer *)user_data;
+    JSCValue *val = webkit_web_view_evaluate_javascript_finish(
+        WEBKIT_WEB_VIEW(source), result, NULL);
+    if (val) {
+        v->scroll_y = jsc_value_to_double(val);
+        g_object_unref(val);
+    }
+    viewer_load_file(v);
+}
+
+static void scroll_save_and_reload(MdpeekViewer *v)
+{
+    webkit_web_view_evaluate_javascript(v->webview,
+        "window.scrollY", -1, NULL, NULL, NULL,
+        on_scroll_saved, v);
+}
+
+static gboolean reload_idle(gpointer user_data)
+{
+    scroll_save_and_reload((MdpeekViewer *)user_data);
+    return G_SOURCE_REMOVE;
+}
+
 static gboolean on_decide_policy(WebKitWebView *web_view,
                                   WebKitPolicyDecision *decision,
                                   WebKitPolicyDecisionType type,
                                   gpointer user_data)
 {
-    (void)web_view; (void)user_data;
+    (void)web_view;
+    MdpeekViewer *v = (MdpeekViewer *)user_data;
 
     if (type != WEBKIT_POLICY_DECISION_TYPE_NAVIGATION_ACTION)
         return FALSE;
@@ -422,9 +450,21 @@ static gboolean on_decide_policy(WebKitWebView *web_view,
     /* Allow initial load and local content */
     if (uri == NULL ||
         g_str_has_prefix(uri, "about:") ||
-        g_str_has_prefix(uri, "data:") ||
-        g_str_has_prefix(uri, "file:"))
+        g_str_has_prefix(uri, "data:"))
         return FALSE;
+
+    /* Intercept reload: re-render the markdown instead of loading raw */
+    if (g_str_has_prefix(uri, "file:")) {
+        char *content_uri = g_filename_to_uri(v->file_path, NULL, NULL);
+        gboolean is_self = (g_strcmp0(uri, content_uri) == 0);
+        g_free(content_uri);
+        if (is_self) {
+            webkit_policy_decision_ignore(decision);
+            g_idle_add(reload_idle, v);
+            return TRUE;
+        }
+        return FALSE;
+    }
 
     /* Open in default browser and block in-app navigation */
     webkit_policy_decision_ignore(decision);
@@ -456,7 +496,7 @@ MdpeekViewer *viewer_new(AdwApplication *app, const char *file_path)
     g_object_unref(wk_settings);
 
     g_signal_connect(v->webview, "decide-policy",
-                     G_CALLBACK(on_decide_policy), NULL);
+                     G_CALLBACK(on_decide_policy), v);
     adw_application_window_set_content(v->window, GTK_WIDGET(v->webview));
 
     /* Escape to close */
@@ -506,12 +546,7 @@ static gboolean reload_timeout(gpointer user_data)
     MdpeekViewer *v = (MdpeekViewer *)user_data;
     v->reload_source_id = 0;
 
-    /* Save scroll position, reload, restore — via JavaScript */
-    webkit_web_view_evaluate_javascript(
-        v->webview,
-        "window.scrollY", -1, NULL, NULL, NULL, NULL, NULL);
-
-    viewer_load_file(v);
+    scroll_save_and_reload(v);
     return G_SOURCE_REMOVE;
 }
 
@@ -557,8 +592,21 @@ void viewer_load_file(MdpeekViewer *v)
     char *transformed = transform_alerts(body);
     g_free(body);
 
-    char *full_html = wrap_html(transformed);
+    char *base_html = wrap_html(transformed);
     g_free(transformed);
+
+    char *full_html;
+    if (v->scroll_y > 0.0) {
+        full_html = g_strdup_printf(
+            "%s<script>window.addEventListener('load',function(){"
+            "window.scrollTo(0,%f)},{once:true});</script>",
+            base_html, v->scroll_y);
+        v->scroll_y = 0.0;
+    } else {
+        full_html = base_html;
+        base_html = NULL;
+    }
+    g_free(base_html);
 
     char *dir = g_path_get_dirname(v->file_path);
     char *dir_uri = g_filename_to_uri(dir, NULL, NULL);

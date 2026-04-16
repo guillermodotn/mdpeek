@@ -10,6 +10,7 @@ typedef struct {
     GFileMonitor         *monitor;
     char                 *file_path;
     guint                 reload_source_id;
+    double                scroll_y;
 } MdpeekViewer;
 
 /* Create a viewer for the given file path. The viewer is owned by the
