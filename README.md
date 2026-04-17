@@ -100,6 +100,8 @@ the preview updates automatically.
 ## Dependencies
 
 > [!TIP]
+> (test dependency graph)
+>
 > The graph below is a Mermaid diagram. If it does not render, a network
 > connection is required.
 
