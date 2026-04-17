@@ -8,16 +8,28 @@ Lightweight CLI markdown previewer with GitHub-style rendering and live reload.
 Renders GitHub Flavored Markdown in a native GTK4 window and automatically
 refreshes when the file changes on disk.
 
+![mdpeek rendering its own README](assets/screenshot.png)
+
 ## Features
 
-- **GFM support** — tables, strikethrough, autolinks, task lists, tag filter
+- **GFM support:** tables, strikethrough, autolinks, task lists, tag filter
   (via cmark-gfm)
-- **Live reload** — watches the file for changes and re-renders automatically
-- **GitHub-style rendering** — pixel-perfect GitHub CSS via WebKitGTK
-- **Lightweight** — WebKitGTK (~30MB) instead of Chromium (~261MB)
-- **Scroll preservation** — maintains scroll position across reloads
-- **Atomic save handling** — correctly handles editors that save via
+- **GitHub alerts:** renders NOTE, TIP, IMPORTANT, WARNING, and CAUTION
+  callouts with icons and colours
+- **Mermaid diagrams:** fenced code blocks tagged `mermaid` are rendered as
+  diagrams
+- **Local images:** relative and absolute image paths are resolved and
+  displayed correctly, including paths with spaces or special characters
+- **Live reload:** watches the file for changes and re-renders automatically
+- **GitHub-style rendering:** pixel-perfect GitHub CSS via WebKitGTK
+- **Lightweight:** WebKitGTK (~30MB) instead of Chromium (~261MB)
+- **Scroll preservation:** maintains scroll position across reloads
+- **Atomic save handling:** correctly handles editors that save via
   write-tmp + rename
+
+> [!NOTE]
+> Mermaid diagram rendering requires a network connection. The Mermaid.js
+> library is loaded from cdn.jsdelivr.net at runtime.
 
 ## Prerequisites
 
@@ -77,10 +89,28 @@ cmake --build build --parallel $(nproc)
 Open a markdown file in a preview window. Edit the file in any editor and
 the preview updates automatically.
 
-## How It Works
+## How It Works 
 
 - **cmark-gfm** (vendored as a Git submodule, statically linked) parses
   Markdown to HTML with GitHub Flavored Markdown extensions
 - **WebKitGTK** renders the HTML with full GitHub CSS styling in a GTK4 window
 - **GFileMonitor** monitors the file for changes (uses inotify on
   Linux) with a 150ms debounce to handle rapid saves
+
+## Dependencies
+
+> [!TIP]
+> The graph below is a Mermaid diagram. If it does not render, a network
+> connection is required.
+
+```mermaid
+graph TD
+    mdpeek --> GTK4
+    mdpeek --> libadwaita
+    mdpeek --> WebKitGTK["WebKitGTK 6.0"]
+    mdpeek --> cmark-gfm["cmark-gfm (vendored)"]
+    cmark-gfm --> cmark-gfm-extensions
+    libadwaita --> GTK4
+    WebKitGTK --> GTK4
+    mdpeek -.->|runtime, optional| Mermaid.js["Mermaid.js (cdn.jsdelivr.net)"]
+```
