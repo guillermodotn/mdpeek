@@ -5,13 +5,12 @@ RUN dnf install -y \
     gcc \
     gcc-c++ \
     make \
-    gtk4-devel \
-    libadwaita-devel \
-    webkitgtk6.0-devel \
+    qt6-qtbase-devel \
+    qt6-qtwebengine-devel \
     && dnf clean all
 
 WORKDIR /src
 COPY . .
 
-RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release -DMDPEEK_BACKEND=qt \
     && cmake --build build --parallel "$(nproc)"
