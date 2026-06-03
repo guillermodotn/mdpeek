@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("mdpeek"));
-    app.setApplicationVersion(QStringLiteral("0.1.0"));
+    app.setApplicationVersion(QStringLiteral(MDPEEK_VERSION));
 
     MdpeekViewer viewer(fi.absoluteFilePath());
     viewer.show();

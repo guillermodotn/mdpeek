@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(mdpeek VERSION 0.1.0 LANGUAGES C CXX)
+project(mdpeek VERSION 0.3.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -29,6 +29,10 @@ endif()
 add_executable(mdpeek
     src/main.cpp
     src/viewer.cpp
+)
+
+target_compile_definitions(mdpeek PRIVATE
+    MDPEEK_VERSION="${PROJECT_VERSION}"
 )
 
 # --- Backend-specific configuration ---
