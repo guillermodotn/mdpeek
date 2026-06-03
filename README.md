@@ -1,12 +1,15 @@
 # mdpeek
 
-[![Copr build status](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek/)
+| Backend | COPR build status |
+|---------|-------------------|
+| GTK4 | [![Copr build status](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek/) |
+| Qt6 | [![Copr build status](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek-qt/status_image/last_build.png)](https://copr.fedorainfracloud.org/coprs/guillermodotn/mdpeek/package/mdpeek-qt/) |
 
 
 Lightweight CLI markdown previewer with GitHub-style rendering and live reload.
 
-Renders GitHub Flavored Markdown in a native GTK4 window and automatically
-refreshes when the file changes on disk.
+Renders GitHub Flavored Markdown in a native window and automatically
+refreshes when the file changes on disk. Supports GTK4 and Qt6 backends.
 
 ![mdpeek rendering its own README](assets/screenshot.png)
 
@@ -129,8 +132,6 @@ the preview updates automatically.
 ## Dependencies
 
 > [!TIP]
-> (test dependency graph)
->
 > The graph below is a Mermaid diagram. If it does not render, a network
 > connection is required.
 
