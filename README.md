@@ -136,12 +136,27 @@ the preview updates automatically.
 
 ```mermaid
 graph TD
-    mdpeek --> GTK4
-    mdpeek --> libadwaita
-    mdpeek --> WebKitGTK["WebKitGTK 6.0"]
     mdpeek --> cmark-gfm["cmark-gfm (vendored)"]
     cmark-gfm --> cmark-gfm-extensions
-    libadwaita --> GTK4
-    WebKitGTK --> GTK4
     mdpeek -.->|runtime, optional| Mermaid.js["Mermaid.js (cdn.jsdelivr.net)"]
+
+    subgraph GTK4 Backend
+        GTK4
+        libadwaita
+        WebKitGTK["WebKitGTK 6.0"]
+        libadwaita --> GTK4
+        WebKitGTK --> GTK4
+    end
+
+    subgraph Qt6 Backend
+        Qt6Widgets["Qt6 Widgets"]
+        Qt6WebEngine["Qt6 WebEngine"]
+        Qt6WebEngine --> Qt6Widgets
+    end
+
+    mdpeek --> GTK4
+    mdpeek --> libadwaita
+    mdpeek --> WebKitGTK
+    mdpeek --> Qt6Widgets
+    mdpeek --> Qt6WebEngine
 ```
